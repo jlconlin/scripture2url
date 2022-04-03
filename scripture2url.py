@@ -1,5 +1,7 @@
 #!/usr/bin/env python
+
 import re
+import argparse
 
 books = {
     # Old Testament
@@ -104,28 +106,63 @@ regex=re.compile("""
     (-(?P<other>[0-9]+))?
     """, re.VERBOSE)
 
-def reformat(scripture):
+def ref2url(scripture, language):
     """
     """
     found = regex.search(scripture)
     if found:
         d = found.groupdict()
         book = books.get(d['book'])
-        url="https://www.churchofjesuschrist.org/study/scriptures/{Book:}/{chapter:}?lang={lang:}&id=p{verse:}".format(lang="eng", Book=book, **d)
+        url="https://www.churchofjesuschrist.org/study/scriptures/{Book:}/{chapter:}?lang={lang:}&id=p{verse:}".format(lang=language, Book=book, **d)
 
         if d['other']:
             url += "-p{}".format(d['other'])
         return url
 
+def convert(reference, url, form):
+    """
+    Convert the reference to a particular format. Available formats are:
+
+        markdown
+        html
+    """
+    forms = {
+        'markdown': '[{ref:}]({url:})',
+        'html': '<a href="{url:}">{ref:}</a>'
+    }
+
+    return forms.get(form).format(ref=reference, url=url)
+
 
 if __name__ == "__main__":
-    print("Creating URLs")
-    scriptures = [
-        "Mosiah 13:29-30",
-        "1 Nephi 3:7",
-        "Joseph Smith-History 1:37",
-        "Joseph Smith-History 1:37",
-    ]
+    description = """
+        Convert scripture reference to URL link to
+        \thttps://www.churchofjesuschrist.org/study/scriptures
+    """
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('reference', type=str,
+        help='Scripture reference. Note the reference must be in quotes')
+    parser.add_argument('-l', '--language', type=str,
+                        default="eng",
+                        help='3-letter language option for URL query')
+    parser.add_argument('--form', choices=['markdown', 'md', 'html', 'plain'],
+                        default="markdown",
+                        help="What form should the link be given.")
+    parser.add_argument('--dont-copy', default=False, action='store_true',
+                        help="Don't copy output to clipboard")
+    args = parser.parse_args()
 
-    for scripture in scriptures:
-        reformat(scripture)
+    url = ref2url(args.reference, args.language)
+
+    if args.form != "plain":
+        url = convert(args.reference, url, args.form)
+
+    if not args.dont_copy:
+        try:
+            import pyperclip
+            pyperclip.copy(url)
+        except ImportError as e:
+            print("Can't copy to clipboard.\n"
+                  "Please install pyperclip Python package.")
+    else:
+        print(url)
