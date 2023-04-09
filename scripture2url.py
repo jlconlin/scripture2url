@@ -101,7 +101,7 @@ books = {
 
 regex=re.compile("""
     (?P<book>([1-4] )?[A-Za-z- ]+)\s+
-    (?P<chapter>[1-9]+):
+    (?P<chapter>[0-9]+):
     (?P<verse>[0-9]*)
     (-(?P<other>[0-9]+))?
     """, re.VERBOSE)
@@ -118,6 +118,8 @@ def ref2url(scripture, language):
         if d['other']:
             url += "-p{}".format(d['other'])
         return url
+    else:
+        print("Scripture reference not found in: '{}'".format(scripture))
 
 def convert(reference, url, form):
     """
